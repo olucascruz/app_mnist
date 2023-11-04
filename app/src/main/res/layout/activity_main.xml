@@ -10,7 +10,7 @@
         android:id="@+id/textureView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginBottom="300dp"
+        android:layout_marginBottom="400dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -49,11 +49,11 @@
 
     <TextView
         android:id="@+id/tvResult"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_width="184dp"
+        android:layout_height="22dp"
         android:layout_marginStart="5dp"
         android:layout_marginTop="67dp"
-        android:layout_marginBottom="70dp"
+        android:layout_marginBottom="64dp"
         android:text="opa"
         android:textSize="16sp"
         app:layout_constraintBottom_toTopOf="@+id/btCapture"
@@ -61,5 +61,19 @@
         app:layout_constraintHorizontal_bias="0.188"
         app:layout_constraintStart_toEndOf="@+id/tvLabel"
         app:layout_constraintTop_toBottomOf="@+id/textureView"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="1.0" />
+
+    <ImageView
+        android:id="@+id/imageView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="21dp"
+        android:layout_marginTop="20dp"
+        android:layout_marginEnd="282dp"
+        android:layout_marginBottom="38dp"
+        app:layout_constraintBottom_toTopOf="@+id/tvLabel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textureView"
+        app:srcCompat="@drawable/ic_launcher_foreground" />
 </androidx.constraintlayout.widget.ConstraintLayout>
