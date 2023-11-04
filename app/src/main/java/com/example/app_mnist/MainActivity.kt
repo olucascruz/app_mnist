@@ -3,14 +3,16 @@ package com.example.app_mnist
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
+import android.graphics.drawable.ClipDrawable
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
+import android.media.Image
 import android.media.ImageReader
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -18,11 +20,10 @@ import android.util.Log
 import android.view.Surface
 import android.view.TextureView
 import android.widget.Button
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.graphics.get
 import com.example.app_mnist.ml.ModelMnist
 import com.google.mlkit.vision.common.InputImage
 import org.tensorflow.lite.DataType
@@ -32,10 +33,6 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.image.ops.TransformToGrayscaleOp
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
-import com.example.app_mnist.convertToBlackAndWhite
-import com.example.app_mnist.invertColors
-import com.example.app_mnist.convertToARGB8888
-import com.example.app_mnist.seeBitmap
 
 
 
@@ -43,17 +40,18 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var  capReq: CaptureRequest.Builder
     lateinit var  handler: Handler
-    lateinit var handlerThread: HandlerThread
-    lateinit var cameraManager: CameraManager
+    private lateinit var handlerThread: HandlerThread
+    private lateinit var cameraManager: CameraManager
     lateinit var textureView: TextureView
     lateinit var cameraCaptureSession: CameraCaptureSession
     lateinit var cameraDevice: CameraDevice
     lateinit var imageReader: ImageReader
-    lateinit var tvResult: TextView
-    lateinit var btPredict: Button
+    private lateinit var tvResult: TextView
+    private lateinit var btPredict: Button
     private var output: String = "Output"
     private var isPredicting = false
 
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -85,30 +83,26 @@ class MainActivity : AppCompatActivity() {
 
         }
 
-        imageReader = ImageReader.newInstance(28, 28, ImageFormat.JPEG, 1)
+        imageReader = ImageReader.newInstance( 400, 400, ImageFormat.JPEG, 1)
         btPredict = findViewById(R.id.btCapture)
 
-        imageReader.setOnImageAvailableListener(object : ImageReader.OnImageAvailableListener{
-            override fun onImageAvailable(p0: ImageReader?) {
-                var image = p0?.acquireLatestImage()
-
-                if(image != null){
-                    val inputImage = InputImage.fromMediaImage(image, 0)
-
-                    if(inputImage != null) {
-                        predictML(inputImage)
-                        runOnUiThread{
-                            tvResult.text = output
-                            btPredict.text = "Predict"
-                        }
-                    }else{
-                        Toast.makeText(this@MainActivity, "Bitmap null", Toast.LENGTH_SHORT).show()
-                    }
-                    image.close()
+        imageReader.setOnImageAvailableListener({ p0 ->
+            val image = p0?.acquireLatestImage()
+            if(image != null){
+                val inputImage = InputImage.fromMediaImage(image, 90)
+                runOnUiThread {
+                    showImage(inputImage.bitmapInternal!!)
                 }
-                Toast.makeText(this@MainActivity, "Predicted", Toast.LENGTH_SHORT).show()
 
+
+                predictML(inputImage)
+                runOnUiThread{
+                    tvResult.text = output
+                    btPredict.text = "Predict"
+                }
+                image.close()
             }
+            Toast.makeText(this@MainActivity, "Predicted", Toast.LENGTH_SHORT).show()
         },handler )
 
 
@@ -127,29 +121,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun predictML(inputImage:InputImage){
-        var imageProcessor = ImageProcessor.Builder()
-            .add(ResizeOp(28,28, ResizeOp.ResizeMethod.BILINEAR))
-            .add(TransformToGrayscaleOp())
-            .build()
+    private fun showImage(bitmap: Bitmap){
+        val imageView = findViewById<ImageView>(R.id.imageView)
+        imageView.setImageBitmap(bitmap)
+    }
 
-        var imageNormalize = ImageProcessor.Builder()
+    private fun predictML(inputImage:InputImage){
+        val imageProcessor = ImageProcessor.Builder()
+            .add(ResizeOp(28,28, ResizeOp.ResizeMethod.BILINEAR))
             .add(TransformToGrayscaleOp())
             .add(NormalizeOp(0.0f, 255.0f))
             .build()
 
         var tensorImage = TensorImage(DataType.UINT8)
 
-        seeBitmap(inputImage.bitmapInternal!!)
+
+
         tensorImage.load(inputImage.bitmapInternal)
         tensorImage = imageProcessor.process(tensorImage)
-        var bitmap = tensorImage.bitmap
-        bitmap = convertToBlackAndWhite(bitmap, 128)
-        bitmap = invertColors(bitmap)
-        bitmap = convertToARGB8888(bitmap)
-
-        tensorImage.load(bitmap)
-        tensorImage = imageNormalize.process(tensorImage)
 
 
         val model = ModelMnist.newInstance(this)
@@ -188,7 +177,7 @@ class MainActivity : AppCompatActivity() {
             override fun onOpened(p0: CameraDevice) {
                 cameraDevice = p0
                 capReq = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-                var surface = Surface(textureView.surfaceTexture)
+                val surface = Surface(textureView.surfaceTexture)
                 capReq.addTarget(surface)
                 cameraDevice.createCaptureSession(listOf(surface, imageReader.surface), object: CameraCaptureSession.StateCallback(){
 
